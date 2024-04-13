@@ -6,13 +6,12 @@ on:
 
 jobs:
   build:
-    runs-on: windows 11 home
+    runs-on: windows-latest
     steps:
       - name: Get Date
         id: get-date
         run: |
-          echo "::set-output name=date::$(/bin/date -u "+%Y%m%d")"
-        shell: bash
+          echo "::set-output name=date::%date:~0,4%%date:~5,2%%date:~8,2%"
       
       - name: Cache Buildozer global directory
         uses: actions/cache@v2
@@ -26,15 +25,23 @@ jobs:
           path: .buildozer
           key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
 
-      - name: Build with Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
+      - name: Set up Python
+        uses: actions/setup-python@v2
         with:
-          command: buildozer android debug
-          buildozer_version: stable
+          python-version: '3.8'
+
+      - name: Install Buildozer
+        run: |
+          pip install buildozer
+          buildozer init
+          buildozer -v
+
+      - name: Build with Buildozer
+        run: buildozer android debug
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: package
           path: ${{ steps.buildozer.outputs.filename }}
+
